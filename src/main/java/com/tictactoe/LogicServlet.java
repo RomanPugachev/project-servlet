@@ -34,10 +34,29 @@ public class LogicServlet extends HttpServlet {
 
             field.getField().put(index, Sign.CROSS);
 
+            if (checkWin(resp, currentSession, field)){
+                return;
+            }
             int emptyFieldIndex = field.getEmptyFieldIndex();
-
             if (emptyFieldIndex >= 0) {
                 field.getField().put(emptyFieldIndex, Sign.NOUGHT);
+                if (checkWin(resp, currentSession, field)){
+                    return;
+                }
+            }
+            else {
+                // Добавляем в сессию флаг, который сигнализирует что произошла ничья
+                currentSession.setAttribute("draw", true);
+
+                // Считаем список значков
+                List<Sign> data = field.getFieldData();
+
+                // Обновляем этот список в сессии
+                currentSession.setAttribute("data", data);
+
+                // Шлем редирект
+                resp.sendRedirect("/index.jsp");
+                return;
             }
 
             List<Sign> data = field.getFieldData();
@@ -65,5 +84,17 @@ public class LogicServlet extends HttpServlet {
             throw new RuntimeException("Session is broken, try one more time");
         }
         return (Field) fieldAttribute;
+    }
+
+    private boolean checkWin(HttpServletResponse resp, HttpSession currentSession, Field field) throws IOException{
+        Sign winner = field.checkWin();
+        if (winner != Sign.EMPTY){
+            currentSession.setAttribute("winner", winner);
+            currentSession.setAttribute("field", field);
+            currentSession.setAttribute("data", field.getFieldData());
+            resp.sendRedirect("/index.jsp");
+            return true;
+        }
+        return false;
     }
 }
